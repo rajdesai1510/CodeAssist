@@ -1,0 +1,224 @@
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: modalFadeIn 0.3s;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-content h2 {
+    padding: 20px 25px;
+    margin: 0;
+    border-bottom: 1px solid #eee;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Modal Tabs */
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    background-color: #f8f9fa;
+}
+
+.modal-tab {
+    padding: 15px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+    text-align: center;
+    transition: all 0.2s ease;
+    color: #666;
+}
+
+.modal-tab:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.modal-tab.active {
+    background-color: white;
+    color: #2196F3;
+    border-bottom: 2px solid #2196F3;
+}
+
+/* Tab Content */
+.modal-tab-content {
+    padding: 25px;
+    display: none;
+}
+
+.modal-tab-content.active {
+    display: block;
+}
+
+.modal-tab-content p {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #555;
+    font-size: 14px;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input, 
+.form-group select, 
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus, 
+.form-group select:focus, 
+.form-group textarea:focus {
+    border-color: #2196F3;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.form-group select {
+    background-color: white;
+    cursor: pointer;
+}
+
+.form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 30px;
+}
+
+.form-actions button {
+    margin-left: 10px;
+}
+
+/* Welcome Modal Specific Styles */
+.welcome-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.welcome-option {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all 0.2s ease;
+    background-color: #f8fafc;
+}
+
+.welcome-option:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.welcome-option i {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.welcome-option h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.welcome-option p {
+    margin-bottom: 1.5rem;
+    color: #64748b;
+}
+
+.new-workspace-form,
+.existing-workspace-form {
+    width: 100%;
+    margin: 1rem 0;
+}
+
+.welcome-option input,
+.welcome-option select,
+.welcome-option textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.welcome-option textarea {
+    height: 100px;
+    resize: none;
+}
+
+.welcome-option button {
+    margin-top: auto;
+    width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .welcome-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+} 

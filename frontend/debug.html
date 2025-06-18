@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug JavaScript Loading</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        .log {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>JavaScript Debugging</h1>
+    
+    <div>
+        <button id="check-modules">Check Module Loading</button>
+        <button id="check-workspace">Load Workspaces</button>
+        <button id="check-files">Load Files for test_project</button>
+        <button id="check-preview">Test Preview Generation</button>
+    </div>
+    
+    <h2>Console Output</h2>
+    <div id="console-log" class="log">Loading debug tools...</div>
+    
+    <h2>Module Status</h2>
+    <div id="module-status" class="log">Checking modules...</div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        const consoleLog = document.getElementById('console-log');
+        const moduleStatus = document.getElementById('module-status');
+        
+        // Override console.log to display in our UI
+        const originalConsoleLog = console.log;
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            const message = args.map(arg => {
+                if (typeof arg === 'object') {
+                    return JSON.stringify(arg, null, 2);
+                }
+                return arg;
+            }).join(' ');
+            consoleLog.textContent += '\n' + message;
+        };
+        
+        // Override console.error to display in our UI
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            const message = args.map(arg => {
+                if (typeof arg === 'object') {
+                    return JSON.stringify(arg, null, 2);
+                }
+                return arg;
+            }).join(' ');
+            consoleLog.textContent += '\n[ERROR] ' + message;
+        };
+        
+        // Load the JS files in the correct order
+        function loadScript(url) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Check if modules are loaded
+        document.getElementById('check-modules').addEventListener('click', async () => {
+            moduleStatus.textContent = '';
+            
+            // Check all expected global modules
+            const modules = [
+                {name: 'appModule', path: 'js/app.js'},
+                {name: 'fileExplorerModule', path: 'js/file-explorer.js'},
+                {name: 'editorModule', path: 'js/editor.js'},
+                {name: 'previewModule', path: 'js/preview.js'}
+            ];
+            
+            for (const module of modules) {
+                try {
+                    await loadScript(module.path);
+                    const isLoaded = window[module.name] !== undefined;
+                    moduleStatus.textContent += `${module.name}: ${isLoaded ? 'LOADED ✅' : 'NOT LOADED ❌'}\n`;
+                    
+                    if (isLoaded) {
+                        moduleStatus.textContent += `Functions: ${Object.keys(window[module.name]).join(', ')}\n\n`;
+                    }
+                } catch (error) {
+                    moduleStatus.textContent += `Error loading ${module.name}: ${error.message} ❌\n\n`;
+                }
+            }
+            
+            // Check for CodeMirror
+            moduleStatus.textContent += `CodeMirror: ${typeof CodeMirror !== 'undefined' ? 'LOADED ✅' : 'NOT LOADED ❌'}\n`;
+            
+            // Check for Split.js
+            moduleStatus.textContent += `Split: ${typeof Split !== 'undefined' ? 'LOADED ✅' : 'NOT LOADED ❌'}\n`;
+        });
+        
+        // Test loading workspaces
+        document.getElementById('check-workspace').addEventListener('click', async () => {
+            consoleLog.textContent = 'Checking workspace loading...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/workspaces`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load workspaces: ${response.status}`);
+                }
+                
+                const workspaces = await response.json();
+                console.log('Workspaces loaded:', workspaces);
+            } catch (error) {
+                console.error('Error loading workspaces:', error);
+            }
+        });
+        
+        // Test loading files for test_project
+        document.getElementById('check-files').addEventListener('click', async () => {
+            consoleLog.textContent = 'Checking files for test_project...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/workspace/test_project/files`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load files: ${response.status}`);
+                }
+                
+                const files = await response.json();
+                console.log('Files loaded:', files);
+                
+                // Try to load index.html
+                if (files.includes('index.html')) {
+                    const fileResponse = await fetch(`${API_URL}/api/workspace/test_project/file/index.html`);
+                    
+                    if (!fileResponse.ok) {
+                        throw new Error(`Failed to load index.html: ${fileResponse.status}`);
+                    }
+                    
+                    const fileData = await fileResponse.json();
+                    console.log('index.html loaded, first 100 chars:', fileData.content.substring(0, 100) + '...');
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+            }
+        });
+        
+        // Test preview generation
+        document.getElementById('check-preview').addEventListener('click', async () => {
+            consoleLog.textContent = 'Testing preview generation...';
+            
+            try {
+                // Check if preview.html exists
+                const response = await fetch(`${API_URL}/api/workspace/test_project/file/preview.html`);
+                
+                if (response.ok) {
+                    const previewData = await response.json();
+                    console.log('preview.html loaded, first 100 chars:', previewData.content.substring(0, 100) + '...');
+                    
+                    // Create an iframe to display preview
+                    const iframe = document.createElement('iframe');
+                    iframe.style.width = '100%';
+                    iframe.style.height = '300px';
+                    iframe.style.border = '1px solid #ccc';
+                    iframe.srcdoc = previewData.content;
+                    document.body.appendChild(iframe);
+                } else {
+                    console.log('No preview.html found, trying to load index.html and styles.css');
+                    
+                    // Try to get index.html and styles.css
+                    const htmlResponse = await fetch(`${API_URL}/api/workspace/test_project/file/index.html`);
+                    
+                    if (htmlResponse.ok) {
+                        const htmlData = await htmlResponse.json();
+                        let htmlContent = htmlData.content;
+                        
+                        // Try to get the CSS file
+                        const cssResponse = await fetch(`${API_URL}/api/workspace/test_project/file/styles.css`);
+                        
+                        if (cssResponse.ok) {
+                            const cssData = await cssResponse.json();
+                            const cssContent = cssData.content;
+                            
+                            // Inject the CSS into the HTML
+                            htmlContent = htmlContent.replace('</head>', `<style>${cssContent}</style></head>`);
+                        }
+                        
+                        // Create an iframe to display preview
+                        const iframe = document.createElement('iframe');
+                        iframe.style.width = '100%';
+                        iframe.style.height = '300px';
+                        iframe.style.border = '1px solid #ccc';
+                        iframe.srcdoc = htmlContent;
+                        document.body.appendChild(iframe);
+                        
+                        console.log('Preview generated from index.html and styles.css');
+                    } else {
+                        console.error('Could not load index.html');
+                    }
+                }
+            } catch (error) {
+                console.error('Error testing preview:', error);
+            }
+        });
+        
+        // Initial log
+        console.log('Debug page loaded. Click buttons to test functionality.');
+    </script>
+    
+    <!-- Load CodeMirror and other external dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://unpkg.com/split-grid"></script>
+</body>
+</html> 

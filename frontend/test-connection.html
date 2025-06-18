@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #results {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Backend Connection Test</h1>
+    <button id="test-connection">Test Connection</button>
+    <button id="list-workspaces">List Workspaces</button>
+    <button id="generate-project">Generate Test Project</button>
+    <div id="results">Click a button to test the connection to the backend.</div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        const resultsDiv = document.getElementById('results');
+        
+        // Test connection button
+        document.getElementById('test-connection').addEventListener('click', async () => {
+            resultsDiv.innerHTML = 'Testing connection to backend...';
+            try {
+                const startTime = performance.now();
+                const response = await fetch(`${API_URL}/api/workspaces`);
+                const endTime = performance.now();
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultsDiv.innerHTML = `<span class="success">✓ Connection successful!</span>\n` +
+                        `Response time: ${(endTime - startTime).toFixed(2)}ms\n` +
+                        `Status: ${response.status} ${response.statusText}\n` +
+                        `Workspaces: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultsDiv.innerHTML = `<span class="error">✗ Connection failed!</span>\n` +
+                        `Status: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<span class="error">✗ Connection error!</span>\n` +
+                    `Error: ${error.message}\n\n` +
+                    `Possible reasons:\n` +
+                    `1. Backend server is not running\n` +
+                    `2. Backend server is running on a different port\n` +
+                    `3. CORS is not properly configured`;
+            }
+        });
+        
+        // List workspaces button
+        document.getElementById('list-workspaces').addEventListener('click', async () => {
+            resultsDiv.innerHTML = 'Fetching workspaces...';
+            try {
+                const response = await fetch(`${API_URL}/api/workspaces`);
+                
+                if (response.ok) {
+                    const workspaces = await response.json();
+                    
+                    if (workspaces.length === 0) {
+                        resultsDiv.innerHTML = 'No workspaces found.';
+                    } else {
+                        resultsDiv.innerHTML = `<span class="success">Found ${workspaces.length} workspaces:</span>\n` +
+                            JSON.stringify(workspaces, null, 2);
+                            
+                        // For each workspace, list files
+                        for (const workspace of workspaces) {
+                            try {
+                                const filesResponse = await fetch(`${API_URL}/api/workspace/${workspace}/files`);
+                                if (filesResponse.ok) {
+                                    const files = await filesResponse.json();
+                                    resultsDiv.innerHTML += `\n\nFiles in ${workspace}:\n` +
+                                        JSON.stringify(files, null, 2);
+                                } else {
+                                    resultsDiv.innerHTML += `\n\nError getting files for ${workspace}: ${filesResponse.status} ${filesResponse.statusText}`;
+                                }
+                            } catch (error) {
+                                resultsDiv.innerHTML += `\n\nError fetching files for ${workspace}: ${error.message}`;
+                            }
+                        }
+                    }
+                } else {
+                    resultsDiv.innerHTML = `<span class="error">Failed to fetch workspaces!</span>\n` +
+                        `Status: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<span class="error">Error fetching workspaces!</span>\n` +
+                    `Error: ${error.message}`;
+            }
+        });
+        
+        // Generate test project button
+        document.getElementById('generate-project').addEventListener('click', async () => {
+            resultsDiv.innerHTML = 'Generating test project...';
+            try {
+                const response = await fetch(`${API_URL}/api/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        workspace_name: 'test_connection_' + Math.floor(Math.random() * 1000),
+                        prompt: 'Create a simple "Hello World" webpage with a blue background'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultsDiv.innerHTML = `<span class="success">✓ Test project generated successfully!</span>\n` +
+                        `Workspace: ${data.workspace_name}\n` +
+                        `Files: ${data.files.map(f => f.name).join(', ')}\n\n` +
+                        `Response details:\n` +
+                        JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    resultsDiv.innerHTML = `<span class="error">✗ Failed to generate test project!</span>\n` +
+                        `Status: ${response.status} ${response.statusText}\n` +
+                        `Error: ${errorText}`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<span class="error">✗ Error generating test project!</span>\n` +
+                    `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html> 
